@@ -32,24 +32,24 @@ func Clear(p string, mids ...Middleware) error {
 			return err
 		}
 
-		var sLine = strings.TrimSpace(string(line))
+		var nLine = string(line)
 
-		if sLine == "" {
+		if nLine == "" {
 			continue
 		}
 
 		for _, mid := range mids {
-			sLine = mid(sLine)
-			if sLine == "" {
+			nLine = mid(nLine)
+			if nLine == "" {
 				break
 			}
 		}
 
-		if sLine == "" {
+		if strings.TrimSpace(nLine) == "" {
 			continue
 		}
 
-		writer.Write(line)
+		writer.WriteString(nLine)
 		writer.WriteString("\n")
 	}
 	writer.Flush()
