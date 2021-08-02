@@ -10,20 +10,21 @@ import (
 )
 
 func main() {
-	filepath.Walk("/Volumes/SmartWalle/音乐/未命名文件夹/林俊杰", func(path string, info fs.FileInfo, err error) error {
+	filepath.Walk("/Volumes/SmartWalle/音乐/未命名文件夹/齐秦", func(path string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
 
-		var ext = filepath.Ext(info.Name())
+		if strings.HasPrefix(info.Name(), ".") {
+			os.Remove(path)
+			return nil
+		}
+
+		var ext = strings.ToLower(filepath.Ext(info.Name()))
 		switch ext {
 		case ".cue":
-			if strings.HasPrefix(info.Name(), ".") {
-				return nil
-			}
-
 			cue.GBKFileToUTF8File(path)
-			cue.Clear(path, TrimRemComment, FixFileWave)
+			cue.Clear(path, TrimRemComment, TrimRemGenre, FixFileWave)
 			if info.Name() != "CDImage.cue" {
 				os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.cue"))
 			}
@@ -43,6 +44,8 @@ func main() {
 			os.Remove(path)
 		case ".url":
 			os.Remove(path)
+		case ".lnk":
+			os.Remove(path)
 		case ".db":
 			switch info.Name() {
 			case "Thumbs.db":
@@ -57,7 +60,11 @@ func main() {
 			case "说明.txt":
 				os.Remove(path)
 			default:
-				cue.GBKFileToUTF8File(path)
+				if strings.Contains(path, "下载") {
+					os.Remove(path)
+				} else {
+					cue.GBKFileToUTF8File(path)
+				}
 			}
 		}
 		return nil
@@ -67,6 +74,13 @@ func main() {
 // TrimRemComment 去除 REM COMMENT
 func TrimRemComment(s string) string {
 	if strings.HasPrefix(strings.TrimSpace(s), "REM COMMENT") {
+		return ""
+	}
+	return s
+}
+
+func TrimRemGenre(s string) string {
+	if strings.HasPrefix(strings.TrimSpace(s), "REM GENRE") {
 		return ""
 	}
 	return s
