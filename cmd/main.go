@@ -10,16 +10,19 @@ import (
 )
 
 func main() {
-	filepath.Walk("/Volumes/SmartWalle/音乐/未命名文件夹/齐秦", func(path string, info fs.FileInfo, err error) error {
+	filepath.Walk("/Volumes/SmartWalle/音乐/未命名文件夹/林忆莲", func(path string, info fs.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
 		if info.IsDir() {
+			if info.Name() == "[原始文件]" {
+				os.RemoveAll(path)
+				return nil
+			}
 			return nil
 		}
 
 		if strings.HasPrefix(info.Name(), ".") {
-			os.Remove(path)
-			return nil
-		}
-		if info.Name() == "[原始文件]" {
 			os.Remove(path)
 			return nil
 		}
