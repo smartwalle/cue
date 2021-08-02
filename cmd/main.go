@@ -19,6 +19,10 @@ func main() {
 			os.Remove(path)
 			return nil
 		}
+		if info.Name() == "[原始文件]" {
+			os.Remove(path)
+			return nil
+		}
 
 		var ext = strings.ToLower(filepath.Ext(info.Name()))
 		switch ext {
