@@ -53,6 +53,10 @@ func main() {
 			os.Remove(path)
 		case ".lnk":
 			os.Remove(path)
+		case ".htm":
+			os.Remove(path)
+		case ".html":
+			os.Remove(path)
 		case ".db":
 			switch info.Name() {
 			case "Thumbs.db":
@@ -60,6 +64,13 @@ func main() {
 			}
 		case ".torrent":
 			os.Remove(path)
+		case ".jpg":
+			switch info.Name() {
+			case "光盘光谱图.jpg":
+				os.Remove(path)
+			case "光盘检测图.jpg":
+				os.Remove(path)
+			}
 		case ".txt":
 			switch info.Name() {
 			case "免责声明.txt":
