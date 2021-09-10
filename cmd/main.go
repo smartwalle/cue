@@ -9,8 +9,11 @@ import (
 	"strings"
 )
 
+var tagInject = regexp.MustCompile("\\[.+\\]$")
+
 func main() {
-	filepath.Walk("/Volumes/SmartWalle/音乐/未命名文件夹/林忆莲", func(path string, info fs.FileInfo, err error) error {
+
+	filepath.Walk("/Volumes/Data/Download/D/动力火车", func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
 		}
@@ -19,6 +22,16 @@ func main() {
 				os.RemoveAll(path)
 				return nil
 			}
+
+			// 替换最后一级目录的字符
+			var name = strings.ReplaceAll(info.Name(), "-", " ")
+			// 替换最后一级目录的歌手名称
+			name = strings.ReplaceAll(name, "动力火车", "")
+			// 替换最后一级目录中 [] 内的内容
+			name = tagInject.ReplaceAllString(name, "")
+
+			os.Rename(path, filepath.Join(filepath.Dir(path), name))
+
 			return nil
 		}
 
