@@ -12,8 +12,7 @@ import (
 var tagInject = regexp.MustCompile("\\[.+\\]$")
 
 func main() {
-
-	filepath.Walk("/Volumes/Data/Download/D/动力火车", func(path string, info fs.FileInfo, err error) error {
+	filepath.Walk("/Volumes/Data/Download/D/万芳", func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
 		}
@@ -25,8 +24,10 @@ func main() {
 
 			// 替换最后一级目录的字符
 			var name = strings.ReplaceAll(info.Name(), "-", " ")
+			name = strings.ReplaceAll(name, "《", "")
+			name = strings.ReplaceAll(name, "》", "")
 			// 替换最后一级目录的歌手名称
-			name = strings.ReplaceAll(name, "动力火车", "")
+			name = strings.ReplaceAll(name, "万芳", "")
 			// 替换最后一级目录中 [] 内的内容
 			name = tagInject.ReplaceAllString(name, "")
 
@@ -36,6 +37,11 @@ func main() {
 		}
 
 		if strings.HasPrefix(info.Name(), ".") {
+			os.Remove(path)
+			return nil
+		}
+
+		if strings.Contains(info.Name(), "检测") {
 			os.Remove(path)
 			return nil
 		}
