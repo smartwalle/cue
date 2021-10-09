@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/smartwalle/cue"
 	"io/fs"
 	"os"
@@ -12,7 +13,8 @@ import (
 var tagInject = regexp.MustCompile("\\[.+\\]$")
 
 func main() {
-	filepath.Walk("/Volumes/Data/Download/D/万芳", func(path string, info fs.FileInfo, err error) error {
+	var author = "关淑怡"
+	filepath.Walk("/Volumes/Data/Download/D/"+author, func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
 		}
@@ -26,8 +28,12 @@ func main() {
 			var name = strings.ReplaceAll(info.Name(), "-", " ")
 			name = strings.ReplaceAll(name, "《", "")
 			name = strings.ReplaceAll(name, "》", "")
+
 			// 替换最后一级目录的歌手名称
-			name = strings.ReplaceAll(name, "万芳", "")
+			if strings.HasPrefix(name, author) {
+				name = strings.Replace(name, author, "", 1)
+			}
+
 			// 替换最后一级目录中 [] 内的内容
 			name = tagInject.ReplaceAllString(name, "")
 
@@ -50,7 +56,7 @@ func main() {
 		switch ext {
 		case ".cue":
 			cue.GBKFileToUTF8File(path)
-			cue.Clear(path, TrimRemComment, TrimRemGenre, FixFileWave)
+			cue.Clear(path, TrimRemComment, TrimRemGenre, FixFileWaveToWav)
 			if info.Name() != "CDImage.cue" {
 				os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.cue"))
 			}
@@ -59,13 +65,19 @@ func main() {
 				os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.wav"))
 			}
 		case ".flac":
-			if info.Name() != "CDImage.flac" {
-				os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.flac"))
-			}
+			//if info.Name() != "CDImage.flac" {
+			//	os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.flac"))
+			//}
+			//os.Remove(path)
+			fmt.Println(path)
 		case ".ape":
-			if info.Name() != "CDImage.ape" {
-				os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.ape"))
-			}
+			//if info.Name() != "CDImage.ape" {
+			//	os.Rename(path, filepath.Join(filepath.Dir(path), "CDImage.ape"))
+			//}
+			//os.Remove(path)
+			fmt.Println(path)
+		case ".xmp":
+			os.Remove(path)
 		case ".log":
 			os.Remove(path)
 		case ".url":
@@ -75,6 +87,8 @@ func main() {
 		case ".htm":
 			os.Remove(path)
 		case ".html":
+			os.Remove(path)
+		case ".lrc":
 			os.Remove(path)
 		case ".db":
 			switch info.Name() {
@@ -95,6 +109,8 @@ func main() {
 			case "免责声明.txt":
 				os.Remove(path)
 			case "说明.txt":
+				os.Remove(path)
+			case "log.txt":
 				os.Remove(path)
 			default:
 				if strings.Contains(path, "下载") {
@@ -132,6 +148,14 @@ func FixFileWave(s string) string {
 			s = `FILE "CDImage.` + matches[2] + `" WAVE`
 			return s
 		}
+		return s
+	}
+	return s
+}
+
+func FixFileWaveToWav(s string) string {
+	if strings.HasPrefix(s, "FILE \"") {
+		s = `FILE "CDImage.wav" WAVE`
 		return s
 	}
 	return s
