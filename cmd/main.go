@@ -11,9 +11,10 @@ import (
 )
 
 var tagInject = regexp.MustCompile("\\[.+\\]$")
+var tagInject2 = regexp.MustCompile("【.+】$")
 
 func main() {
-	var author = "关淑怡"
+	var author = "吴奇隆"
 	filepath.Walk("/Volumes/Data/Download/D/"+author, func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
@@ -28,6 +29,7 @@ func main() {
 			var name = strings.ReplaceAll(info.Name(), "-", " ")
 			name = strings.ReplaceAll(name, "《", "")
 			name = strings.ReplaceAll(name, "》", "")
+			name = strings.ReplaceAll(name, ".", "")
 
 			// 替换最后一级目录的歌手名称
 			if strings.HasPrefix(name, author) {
@@ -36,6 +38,14 @@ func main() {
 
 			// 替换最后一级目录中 [] 内的内容
 			name = tagInject.ReplaceAllString(name, "")
+			name = tagInject2.ReplaceAllString(name, "")
+
+			for {
+				if strings.Contains(name, "  ") == false {
+					break
+				}
+				name = strings.ReplaceAll(name, "  ", " ")
+			}
 
 			os.Rename(path, filepath.Join(filepath.Dir(path), name))
 
