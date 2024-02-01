@@ -14,8 +14,8 @@ var tagInject = regexp.MustCompile("\\[.+\\]$")
 var tagInject2 = regexp.MustCompile("【.+】$")
 
 func main() {
-	var author = "吴奇隆"
-	filepath.Walk("/Volumes/Data/Download/D/"+author, func(path string, info fs.FileInfo, err error) error {
+	var performer = "费玉清"
+	filepath.Walk("/Volumes/Data/Download/D/"+performer, func(path string, info fs.FileInfo, err error) error {
 		if info == nil {
 			return nil
 		}
@@ -29,11 +29,12 @@ func main() {
 			var name = strings.ReplaceAll(info.Name(), "-", " ")
 			name = strings.ReplaceAll(name, "《", "")
 			name = strings.ReplaceAll(name, "》", "")
-			name = strings.ReplaceAll(name, ".", "")
+			name = strings.ReplaceAll(name, ".", " ")
+			name = strings.TrimSpace(name)
 
 			// 替换最后一级目录的歌手名称
-			if strings.HasPrefix(name, author) {
-				name = strings.Replace(name, author, "", 1)
+			if strings.HasPrefix(name, performer) {
+				name = strings.Replace(name, performer, "", 1)
 			}
 
 			// 替换最后一级目录中 [] 内的内容
@@ -114,6 +115,7 @@ func main() {
 			case "光盘检测图.jpg":
 				os.Remove(path)
 			}
+			os.Rename(path, strings.ReplaceAll(path, "JPG", "jpg"))
 		case ".txt":
 			switch info.Name() {
 			case "免责声明.txt":
