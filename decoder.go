@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func Decode(cue string) (*Sheet, error) {
-	var file, err = os.Open(cue)
+func Decode(filename string) (*Sheet, error) {
+	var file, err = os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
