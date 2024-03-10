@@ -251,8 +251,10 @@ func (t *Track) writeTo(w Writer) error {
 	if err := NewString("    TITLE ", t.Title, "\"", "\"", true).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).writeTo(w); err != nil {
-		return err
+	if len(t.Performer) > 0 {
+		if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).writeTo(w); err != nil {
+			return err
+		}
 	}
 	if len(t.SongWriter) > 0 {
 		if err := NewString("    SONGWRITER ", t.SongWriter, "\"", "\"", true).writeTo(w); err != nil {
