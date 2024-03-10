@@ -11,17 +11,18 @@ func Decode(cue string) (*Sheet, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	var scanner = bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
 	var sheet = NewSheet()
 
 	for scanner.Scan() {
+		if err = scanner.Err(); err != nil {
+			return nil, err
+		}
+
 		var line = strings.TrimSpace(scanner.Text())
 		var kIndex = strings.Index(line, " ")
 

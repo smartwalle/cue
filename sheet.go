@@ -2,17 +2,18 @@ package cue
 
 import (
 	"bufio"
+	"io"
 	"strings"
 )
 
-type element interface {
+type property interface {
 	setTitle(title string)
 	setPerformer(performer string)
 	setSongWriter(writer string)
 	setISRC(isrc string)
 	setCatalog(catalog string)
-	setCDTextFile(file string)
-	setFile(name, fType string)
+	setCDTextFile(filename string)
+	setFile(filename, fileType string)
 	setComment(key, value string)
 	setIndex(index, beginTime string)
 }
@@ -51,7 +52,7 @@ func (s String) WriteTo(w *bufio.Writer) error {
 type Sheet struct {
 	Header  *Header
 	Tracks  []*Track
-	current element
+	current property
 }
 
 func NewSheet() *Sheet {
@@ -61,16 +62,23 @@ func NewSheet() *Sheet {
 	return s
 }
 
-func (s *Sheet) WriteTo(w *bufio.Writer) error {
-	if err := s.Header.WriteTo(w); err != nil {
+func (s *Sheet) Write(w io.Writer) error {
+	var nWriter *bufio.Writer
+	if w, ok := w.(*bufio.Writer); ok {
+		nWriter = w
+	} else {
+		nWriter = bufio.NewWriter(w)
+	}
+
+	if err := s.Header.write(nWriter); err != nil {
 		return err
 	}
 	for _, t := range s.Tracks {
-		if err := t.WriteTo(w); err != nil {
+		if err := t.write(nWriter); err != nil {
 			return err
 		}
 	}
-	w.Flush()
+	nWriter.Flush()
 	return nil
 }
 
@@ -94,12 +102,12 @@ func (s *Sheet) setCatalog(catalog string) {
 	s.current.setCatalog(catalog)
 }
 
-func (s *Sheet) setCDTextFile(file string) {
-	s.current.setCDTextFile(file)
+func (s *Sheet) setCDTextFile(filename string) {
+	s.current.setCDTextFile(filename)
 }
 
-func (s *Sheet) setFile(name, fType string) {
-	s.current.setFile(name, fType)
+func (s *Sheet) setFile(filename, fileType string) {
+	s.current.setFile(filename, fileType)
 }
 
 func (s *Sheet) setComment(comment string) {
@@ -133,90 +141,78 @@ func (s *Sheet) setIndex(index, beginTime string) {
 	s.current.setIndex(index, beginTime)
 }
 
-func (s *Sheet) AddTrack(id, tType string) *Track {
-	var t = NewTrack(id, tType)
+func (s *Sheet) AddTrack(id, trackType string) *Track {
+	var t = NewTrack(id, trackType)
 	s.Tracks = append(s.Tracks, t)
 	s.current = t
 	return t
 }
 
 type Header struct {
-	title      string
-	performer  string
-	songWriter string
-	catalog    string
-	cdTextFile string
-	comments   []Comment
-	file       File
+	Title      string
+	Performer  string
+	SongWriter string
+	Catalog    string
+	CDTextFile string
+	Comments   []Comment
+	File       File
 }
 
-func (h *Header) WriteTo(w *bufio.Writer) error {
-	if err := NewString("TITLE ", h.title, "\"", "\"", true).WriteTo(w); err != nil {
+func (h *Header) write(w *bufio.Writer) error {
+	if err := NewString("TITLE ", h.Title, "\"", "\"", true).WriteTo(w); err != nil {
 		return err
 	}
-	if err := NewString("PERFORMER ", h.performer, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("PERFORMER ", h.Performer, "\"", "\"", true).WriteTo(w); err != nil {
 		return err
 	}
-	if len(h.songWriter) > 0 {
-		if err := NewString("SONGWRITER ", h.songWriter, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(h.SongWriter) > 0 {
+		if err := NewString("SONGWRITER ", h.SongWriter, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	if len(h.catalog) > 0 {
-		if err := NewString("CATALOG ", h.catalog, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(h.Catalog) > 0 {
+		if err := NewString("CATALOG ", h.Catalog, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	if len(h.cdTextFile) > 0 {
-		if err := NewString("CDTEXTFILE ", h.cdTextFile, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(h.CDTextFile) > 0 {
+		if err := NewString("CDTEXTFILE ", h.CDTextFile, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	for _, comment := range h.comments {
-		if len(comment.key) > 0 {
-			if err := NewString("REM ", comment.key, "", "", len(comment.value) == 0).WriteTo(w); err != nil {
+	for _, comment := range h.Comments {
+		if len(comment.Key) > 0 {
+			if err := NewString("REM ", comment.Key, "", "", len(comment.Value) == 0).WriteTo(w); err != nil {
 				return err
 			}
-			if len(comment.value) > 0 {
+			if len(comment.Value) > 0 {
 
-				if err := NewString(" ", comment.value, "", "", true).WriteTo(w); err != nil {
+				if err := NewString(" ", comment.Value, "", "", true).WriteTo(w); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := NewString("REM ", comment.value, "", "", true).WriteTo(w); err != nil {
+			if err := NewString("REM ", comment.Value, "", "", true).WriteTo(w); err != nil {
 				return err
 			}
 		}
 	}
-	if err := h.file.WriteTo(w); err != nil {
+	if err := h.File.write(w); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (h *Header) setTitle(title string) {
-	h.title = title
-}
-
-func (h *Header) SetTitle(title string) {
-	h.setTitle(title)
+	h.Title = title
 }
 
 func (h *Header) setPerformer(performer string) {
-	h.performer = performer
-}
-
-func (h *Header) SetPerformer(performer string) {
-	h.setPerformer(performer)
+	h.Performer = performer
 }
 
 func (h *Header) setSongWriter(writer string) {
-	h.songWriter = writer
-}
-
-func (h *Header) SetSongWriter(writer string) {
-	h.setSongWriter(writer)
+	h.SongWriter = writer
 }
 
 func (h *Header) setISRC(isrc string) {
@@ -224,129 +220,117 @@ func (h *Header) setISRC(isrc string) {
 }
 
 func (h *Header) setCatalog(catalog string) {
-	h.catalog = catalog
+	h.Catalog = catalog
 }
 
-func (h *Header) SetCatalog(catalog string) {
-	h.setCatalog(catalog)
+func (h *Header) setCDTextFile(filename string) {
+	h.CDTextFile = filename
 }
 
-func (h *Header) setCDTextFile(file string) {
-	h.cdTextFile = file
-}
-
-func (h *Header) SetCDTextFile(file string) {
-	h.setCDTextFile(file)
-}
-
-func (h *Header) setFile(name, fType string) {
-	h.file = File{name: name, fileType: fType}
-}
-
-func (h *Header) SetFile(name, fType string) {
-	h.setFile(name, fType)
+func (h *Header) setFile(filename, fileType string) {
+	h.File = File{Filename: filename, FileType: fileType}
 }
 
 func (h *Header) setComment(key, value string) {
-	h.comments = append(h.comments, Comment{key: key, value: value})
-}
-
-func (h *Header) SetComment(key, value string) {
-	h.setComment(key, value)
+	h.Comments = append(h.Comments, Comment{Key: key, Value: value})
 }
 
 func (h *Header) setIndex(index, beginTime string) {
 	panic("Header not implemented method setIndex")
 }
 
+func (h *Header) AddComment(key, value string) {
+	h.setComment(key, value)
+}
+
 type Comment struct {
-	key   string
-	value string
+	Key   string
+	Value string
 }
 
 type File struct {
-	name     string
-	fileType string
+	Filename string
+	FileType string
 }
 
-func (f *File) WriteTo(w *bufio.Writer) error {
-	if err := NewString("FILE ", f.name, "\"", "\"", false).WriteTo(w); err != nil {
+func (f *File) write(w *bufio.Writer) error {
+	if err := NewString("FILE ", f.Filename, "\"", "\"", false).WriteTo(w); err != nil {
 		return err
 	}
-	if err := NewString(" ", f.fileType, "", "", true).WriteTo(w); err != nil {
+	if err := NewString(" ", f.FileType, "", "", true).WriteTo(w); err != nil {
 		return err
 	}
 	return nil
 }
 
 type Track struct {
-	id         string
-	trackType  string
-	title      string
-	performer  string
-	songWriter string
-	catalog    string
-	isrc       string
-	comments   []Comment
-	indexes    []Index
+	Id         string
+	TrackType  string
+	Title      string
+	Performer  string
+	SongWriter string
+	Catalog    string
+	ISRC       string
+	Comments   []Comment
+	Indexes    []Index
 }
 
-func NewTrack(id, tType string) *Track {
+func NewTrack(id, trackType string) *Track {
 	var t = &Track{}
-	t.id = id
-	t.trackType = tType
+	t.Id = id
+	t.TrackType = trackType
 	return t
 }
 
-func (t *Track) WriteTo(w *bufio.Writer) error {
-	if err := NewString("  TRACK ", t.id, "", "", false).WriteTo(w); err != nil {
+func (t *Track) write(w *bufio.Writer) error {
+	if err := NewString("  TRACK ", t.Id, "", "", false).WriteTo(w); err != nil {
 		return err
 	}
-	if err := NewString(" ", t.trackType, "", "", true).WriteTo(w); err != nil {
+	if err := NewString(" ", t.TrackType, "", "", true).WriteTo(w); err != nil {
 		return err
 	}
-	if err := NewString("    TITLE ", t.title, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("    TITLE ", t.Title, "\"", "\"", true).WriteTo(w); err != nil {
 		return err
 	}
-	if err := NewString("    PERFORMER ", t.performer, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).WriteTo(w); err != nil {
 		return err
 	}
-	if len(t.songWriter) > 0 {
-		if err := NewString("    SONGWRITER ", t.songWriter, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(t.SongWriter) > 0 {
+		if err := NewString("    SONGWRITER ", t.SongWriter, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	if len(t.catalog) > 0 {
-		if err := NewString("    CATALOG ", t.catalog, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(t.Catalog) > 0 {
+		if err := NewString("    CATALOG ", t.Catalog, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	if len(t.isrc) > 0 {
-		if err := NewString("    ISRC ", t.isrc, "\"", "\"", true).WriteTo(w); err != nil {
+	if len(t.ISRC) > 0 {
+		if err := NewString("    ISRC ", t.ISRC, "\"", "\"", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
-	for _, comment := range t.comments {
-		if len(comment.key) > 0 && len(comment.value) > 0 {
-			if err := NewString("    REM ", comment.key, "", "", len(comment.value) == 0).WriteTo(w); err != nil {
+	for _, comment := range t.Comments {
+		if len(comment.Key) > 0 && len(comment.Value) > 0 {
+			if err := NewString("    REM ", comment.Key, "", "", len(comment.Value) == 0).WriteTo(w); err != nil {
 				return err
 			}
-			if len(comment.value) > 0 {
-				if err := NewString(" ", comment.value, "", "", true).WriteTo(w); err != nil {
+			if len(comment.Value) > 0 {
+				if err := NewString(" ", comment.Value, "", "", true).WriteTo(w); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := NewString("    REM ", comment.value, "", "", true).WriteTo(w); err != nil {
+			if err := NewString("    REM ", comment.Value, "", "", true).WriteTo(w); err != nil {
 				return err
 			}
 		}
 	}
-	for _, index := range t.indexes {
-		if err := NewString("    INDEX ", index.index, "", "", false).WriteTo(w); err != nil {
+	for _, index := range t.Indexes {
+		if err := NewString("    INDEX ", index.Index, "", "", false).WriteTo(w); err != nil {
 			return err
 		}
-		if err := NewString(" ", index.beginTime, "", "", true).WriteTo(w); err != nil {
+		if err := NewString(" ", index.BeginTime, "", "", true).WriteTo(w); err != nil {
 			return err
 		}
 	}
@@ -354,70 +338,50 @@ func (t *Track) WriteTo(w *bufio.Writer) error {
 }
 
 func (t *Track) setTitle(title string) {
-	t.title = title
-}
-
-func (t *Track) SetTitle(title string) {
-	t.setTitle(title)
+	t.Title = title
 }
 
 func (t *Track) setPerformer(performer string) {
-	t.performer = performer
-}
-
-func (t *Track) SetPerformer(performer string) {
-	t.setPerformer(performer)
+	t.Performer = performer
 }
 
 func (t *Track) setSongWriter(writer string) {
-	t.songWriter = writer
-}
-
-func (t *Track) SetSongWriter(writer string) {
-	t.setSongWriter(writer)
+	t.SongWriter = writer
 }
 
 func (t *Track) setISRC(isrc string) {
-	t.isrc = isrc
-}
-
-func (t *Track) SetISRC(isrc string) {
-	t.setISRC(isrc)
+	t.ISRC = isrc
 }
 
 func (t *Track) setCatalog(catalog string) {
-	t.catalog = catalog
+	t.Catalog = catalog
 }
 
-func (t *Track) SetCatalog(catalog string) {
-	t.setCatalog(catalog)
-}
-
-func (t *Track) setCDTextFile(file string) {
+func (t *Track) setCDTextFile(filename string) {
 	panic("Track not implemented method setCDTextFile")
 }
 
-func (t *Track) setFile(name, fType string) {
+func (t *Track) setFile(filename, fileType string) {
 	panic("Track not implemented method setFile")
 }
 
 func (t *Track) setComment(key, value string) {
-	t.comments = append(t.comments, Comment{key: key, value: value})
-}
-
-func (t *Track) SetComment(key, value string) {
-	t.setComment(key, value)
+	t.Comments = append(t.Comments, Comment{Key: key, Value: value})
 }
 
 func (t *Track) setIndex(index, beginTime string) {
-	t.indexes = append(t.indexes, Index{index: index, beginTime: beginTime})
+	t.Indexes = append(t.Indexes, Index{Index: index, BeginTime: beginTime})
 }
 
-func (t *Track) SetIndex(index, beginTime string) {
+func (t *Track) AddComment(key, value string) {
+	t.setComment(key, value)
+}
+
+func (t *Track) AddIndex(index, beginTime string) {
 	t.setIndex(index, beginTime)
 }
 
 type Index struct {
-	index     string
-	beginTime string
+	Index     string
+	BeginTime string
 }

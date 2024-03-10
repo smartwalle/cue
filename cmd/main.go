@@ -14,7 +14,7 @@ func main() {
 		return
 	}
 
-	var f, _ = os.Create("./xx.txt")
-	sheet.WriteTo(bufio.NewWriter(f))
+	var f, _ = os.Create("./out.cue")
+	sheet.Write(bufio.NewWriter(f))
 	f.Close()
 }

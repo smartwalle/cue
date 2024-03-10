@@ -40,3 +40,4 @@ main
 *_new.pb.go
 *.tar
 csharp
+*.cue
