@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/smartwalle/cue"
 	"os"
@@ -15,6 +14,6 @@ func main() {
 	}
 
 	var f, _ = os.Create("./out.cue")
-	sheet.Write(bufio.NewWriter(f))
+	sheet.WriteTo(cue.NewWriter(f))
 	f.Close()
 }

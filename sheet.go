@@ -1,8 +1,6 @@
 package cue
 
 import (
-	"bufio"
-	"io"
 	"strings"
 )
 
@@ -18,37 +16,6 @@ type property interface {
 	setIndex(index, beginTime string)
 }
 
-type String struct {
-	key     string
-	value   string
-	prefix  string
-	suffix  string
-	newline bool
-}
-
-func NewString(key, value, prefix, suffix string, newline bool) String {
-	return String{key: key, value: value, prefix: prefix, suffix: suffix, newline: newline}
-}
-
-func (s String) WriteTo(w *bufio.Writer) error {
-	if _, err := w.WriteString(s.key); err != nil {
-		return err
-	}
-	if _, err := w.WriteString(s.prefix); err != nil {
-		return err
-	}
-	if _, err := w.WriteString(s.value); err != nil {
-		return err
-	}
-	if _, err := w.WriteString(s.suffix); err != nil {
-		return err
-	}
-	if s.newline {
-		w.WriteString("\n")
-	}
-	return nil
-}
-
 type Sheet struct {
 	Header  *Header
 	Tracks  []*Track
@@ -62,24 +29,16 @@ func NewSheet() *Sheet {
 	return s
 }
 
-func (s *Sheet) Write(w io.Writer) error {
-	var nWriter *bufio.Writer
-	if w, ok := w.(*bufio.Writer); ok {
-		nWriter = w
-	} else {
-		nWriter = bufio.NewWriter(w)
-	}
-
-	if err := s.Header.write(nWriter); err != nil {
+func (s *Sheet) WriteTo(w Writer) error {
+	if err := s.Header.writeTo(w); err != nil {
 		return err
 	}
 	for _, t := range s.Tracks {
-		if err := t.write(nWriter); err != nil {
+		if err := t.writeTo(w); err != nil {
 			return err
 		}
 	}
-	nWriter.Flush()
-	return nil
+	return w.Flush()
 }
 
 func (s *Sheet) setTitle(title string) {
@@ -158,46 +117,46 @@ type Header struct {
 	File       File
 }
 
-func (h *Header) write(w *bufio.Writer) error {
-	if err := NewString("TITLE ", h.Title, "\"", "\"", true).WriteTo(w); err != nil {
+func (h *Header) writeTo(w Writer) error {
+	if err := NewString("TITLE ", h.Title, "\"", "\"", true).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString("PERFORMER ", h.Performer, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("PERFORMER ", h.Performer, "\"", "\"", true).writeTo(w); err != nil {
 		return err
 	}
 	if len(h.SongWriter) > 0 {
-		if err := NewString("SONGWRITER ", h.SongWriter, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("SONGWRITER ", h.SongWriter, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(h.Catalog) > 0 {
-		if err := NewString("CATALOG ", h.Catalog, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("CATALOG ", h.Catalog, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(h.CDTextFile) > 0 {
-		if err := NewString("CDTEXTFILE ", h.CDTextFile, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("CDTEXTFILE ", h.CDTextFile, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	for _, comment := range h.Comments {
 		if len(comment.Key) > 0 {
-			if err := NewString("REM ", comment.Key, "", "", len(comment.Value) == 0).WriteTo(w); err != nil {
+			if err := NewString("REM ", comment.Key, "", "", len(comment.Value) == 0).writeTo(w); err != nil {
 				return err
 			}
 			if len(comment.Value) > 0 {
 
-				if err := NewString(" ", comment.Value, "", "", true).WriteTo(w); err != nil {
+				if err := NewString(" ", comment.Value, "", "", true).writeTo(w); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := NewString("REM ", comment.Value, "", "", true).WriteTo(w); err != nil {
+			if err := NewString("REM ", comment.Value, "", "", true).writeTo(w); err != nil {
 				return err
 			}
 		}
 	}
-	if err := h.File.write(w); err != nil {
+	if err := h.File.writeTo(w); err != nil {
 		return err
 	}
 	return nil
@@ -253,11 +212,11 @@ type File struct {
 	FileType string
 }
 
-func (f *File) write(w *bufio.Writer) error {
-	if err := NewString("FILE ", f.Filename, "\"", "\"", false).WriteTo(w); err != nil {
+func (f *File) writeTo(w Writer) error {
+	if err := NewString("FILE ", f.Filename, "\"", "\"", false).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString(" ", f.FileType, "", "", true).WriteTo(w); err != nil {
+	if err := NewString(" ", f.FileType, "", "", true).writeTo(w); err != nil {
 		return err
 	}
 	return nil
@@ -282,55 +241,55 @@ func NewTrack(id, trackType string) *Track {
 	return t
 }
 
-func (t *Track) write(w *bufio.Writer) error {
-	if err := NewString("  TRACK ", t.Id, "", "", false).WriteTo(w); err != nil {
+func (t *Track) writeTo(w Writer) error {
+	if err := NewString("  TRACK ", t.Id, "", "", false).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString(" ", t.TrackType, "", "", true).WriteTo(w); err != nil {
+	if err := NewString(" ", t.TrackType, "", "", true).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString("    TITLE ", t.Title, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("    TITLE ", t.Title, "\"", "\"", true).writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).WriteTo(w); err != nil {
+	if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).writeTo(w); err != nil {
 		return err
 	}
 	if len(t.SongWriter) > 0 {
-		if err := NewString("    SONGWRITER ", t.SongWriter, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("    SONGWRITER ", t.SongWriter, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(t.Catalog) > 0 {
-		if err := NewString("    CATALOG ", t.Catalog, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("    CATALOG ", t.Catalog, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(t.ISRC) > 0 {
-		if err := NewString("    ISRC ", t.ISRC, "\"", "\"", true).WriteTo(w); err != nil {
+		if err := NewString("    ISRC ", t.ISRC, "\"", "\"", true).writeTo(w); err != nil {
 			return err
 		}
 	}
 	for _, comment := range t.Comments {
 		if len(comment.Key) > 0 && len(comment.Value) > 0 {
-			if err := NewString("    REM ", comment.Key, "", "", len(comment.Value) == 0).WriteTo(w); err != nil {
+			if err := NewString("    REM ", comment.Key, "", "", len(comment.Value) == 0).writeTo(w); err != nil {
 				return err
 			}
 			if len(comment.Value) > 0 {
-				if err := NewString(" ", comment.Value, "", "", true).WriteTo(w); err != nil {
+				if err := NewString(" ", comment.Value, "", "", true).writeTo(w); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := NewString("    REM ", comment.Value, "", "", true).WriteTo(w); err != nil {
+			if err := NewString("    REM ", comment.Value, "", "", true).writeTo(w); err != nil {
 				return err
 			}
 		}
 	}
 	for _, index := range t.Indexes {
-		if err := NewString("    INDEX ", index.Index, "", "", false).WriteTo(w); err != nil {
+		if err := NewString("    INDEX ", index.Index, "", "", false).writeTo(w); err != nil {
 			return err
 		}
-		if err := NewString(" ", index.BeginTime, "", "", true).WriteTo(w); err != nil {
+		if err := NewString(" ", index.BeginTime, "", "", true).writeTo(w); err != nil {
 			return err
 		}
 	}
