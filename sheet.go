@@ -1,9 +1,5 @@
 package cue
 
-import (
-	"strings"
-)
-
 type property interface {
 	setTitle(title string)
 	setPerformer(performer string)
@@ -69,31 +65,8 @@ func (s *Sheet) setFile(filename, fileType string) {
 	s.current.setFile(filename, fileType)
 }
 
-func (s *Sheet) setComment(comment string) {
-	if comment[0] == '"' {
-		s.current.setComment("", comment)
-	} else {
-		var kIndex = strings.Index(comment, " ")
-		if kIndex > 0 {
-			var key = comment[:kIndex]
-			var value = comment[kIndex+1:]
-			s.current.setComment(key, value)
-		} else {
-			var key = strings.ToUpper(comment)
-			switch key {
-			case "GENRE":
-				s.current.setComment(key, "")
-			case "DISCID":
-				s.current.setComment(key, "")
-			case "DATE":
-				s.current.setComment(key, "")
-			case "COMMENT":
-				s.current.setComment(key, "")
-			default:
-				s.current.setComment("", comment)
-			}
-		}
-	}
+func (s *Sheet) setComment(key, value string) {
+	s.current.setComment(key, value)
 }
 
 func (s *Sheet) setIndex(index, beginTime string) {
@@ -118,45 +91,45 @@ type Header struct {
 }
 
 func (h *Header) writeTo(w Writer) error {
-	if err := NewString("TITLE ", h.Title, "\"", "\"", true).writeTo(w); err != nil {
+	if err := NewString("TITLE \"", h.Title, "\"\n").writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString("PERFORMER ", h.Performer, "\"", "\"", true).writeTo(w); err != nil {
+	if err := NewString("PERFORMER \"", h.Performer, "\"\n").writeTo(w); err != nil {
 		return err
 	}
 	if len(h.SongWriter) > 0 {
-		if err := NewString("SONGWRITER ", h.SongWriter, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("SONGWRITER \"", h.SongWriter, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(h.Catalog) > 0 {
-		if err := NewString("CATALOG ", h.Catalog, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("CATALOG \"", h.Catalog, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(h.CDTextFile) > 0 {
-		if err := NewString("CDTEXTFILE ", h.CDTextFile, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("CDTEXTFILE \"", h.CDTextFile, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	for _, comment := range h.Comments {
 		if len(comment.Key) > 0 {
-			if err := NewString("REM ", comment.Key, "", "", len(comment.Value) == 0).writeTo(w); err != nil {
+			if err := NewString("REM ", comment.Key).writeTo(w); err != nil {
 				return err
 			}
 			if len(comment.Value) > 0 {
-
-				if err := NewString(" ", comment.Value, "", "", true).writeTo(w); err != nil {
+				if err := NewString(" ", comment.Value).writeTo(w); err != nil {
 					return err
 				}
 			}
+			w.WriteString("\n")
 		} else {
-			if err := NewString("REM ", comment.Value, "", "", true).writeTo(w); err != nil {
+			if err := NewString("REM ", comment.Value, "\n").writeTo(w); err != nil {
 				return err
 			}
 		}
 	}
-	if err := h.File.writeTo(w); err != nil {
+	if err := NewString("FILE \"", h.File.Filename, "\" ", h.File.FileType, "\n").writeTo(w); err != nil {
 		return err
 	}
 	return nil
@@ -212,16 +185,6 @@ type File struct {
 	FileType string
 }
 
-func (f *File) writeTo(w Writer) error {
-	if err := NewString("FILE ", f.Filename, "\"", "\"", false).writeTo(w); err != nil {
-		return err
-	}
-	if err := NewString(" ", f.FileType, "", "", true).writeTo(w); err != nil {
-		return err
-	}
-	return nil
-}
-
 type Track struct {
 	Id         string
 	TrackType  string
@@ -242,56 +205,51 @@ func NewTrack(id, trackType string) *Track {
 }
 
 func (t *Track) writeTo(w Writer) error {
-	if err := NewString("  TRACK ", t.Id, "", "", false).writeTo(w); err != nil {
+	if err := NewString("  TRACK ", t.Id, " ", t.TrackType, "\n").writeTo(w); err != nil {
 		return err
 	}
-	if err := NewString(" ", t.TrackType, "", "", true).writeTo(w); err != nil {
-		return err
-	}
-	if err := NewString("    TITLE ", t.Title, "\"", "\"", true).writeTo(w); err != nil {
+	if err := NewString("    TITLE \"", t.Title, "\"\n").writeTo(w); err != nil {
 		return err
 	}
 	if len(t.Performer) > 0 {
-		if err := NewString("    PERFORMER ", t.Performer, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("    PERFORMER \"", t.Performer, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(t.SongWriter) > 0 {
-		if err := NewString("    SONGWRITER ", t.SongWriter, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("    SONGWRITER \"", t.SongWriter, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(t.Catalog) > 0 {
-		if err := NewString("    CATALOG ", t.Catalog, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("    CATALOG \"", t.Catalog, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	if len(t.ISRC) > 0 {
-		if err := NewString("    ISRC ", t.ISRC, "\"", "\"", true).writeTo(w); err != nil {
+		if err := NewString("    ISRC \"", t.ISRC, "\"\n").writeTo(w); err != nil {
 			return err
 		}
 	}
 	for _, comment := range t.Comments {
-		if len(comment.Key) > 0 && len(comment.Value) > 0 {
-			if err := NewString("    REM ", comment.Key, "", "", len(comment.Value) == 0).writeTo(w); err != nil {
+		if len(comment.Key) > 0 {
+			if err := NewString("REM ", comment.Key).writeTo(w); err != nil {
 				return err
 			}
 			if len(comment.Value) > 0 {
-				if err := NewString(" ", comment.Value, "", "", true).writeTo(w); err != nil {
+				if err := NewString(" ", comment.Value).writeTo(w); err != nil {
 					return err
 				}
 			}
+			w.WriteString("\n")
 		} else {
-			if err := NewString("    REM ", comment.Value, "", "", true).writeTo(w); err != nil {
+			if err := NewString("REM ", comment.Value, "\n").writeTo(w); err != nil {
 				return err
 			}
 		}
 	}
 	for _, index := range t.Indexes {
-		if err := NewString("    INDEX ", index.Index, "", "", false).writeTo(w); err != nil {
-			return err
-		}
-		if err := NewString(" ", index.BeginTime, "", "", true).writeTo(w); err != nil {
+		if err := NewString("    INDEX ", index.Index, " ", index.BeginTime, "\n").writeTo(w); err != nil {
 			return err
 		}
 	}
