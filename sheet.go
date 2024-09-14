@@ -9,6 +9,7 @@ type property interface {
 	setCDTextFile(filename string)
 	setFile(filename, fileType string)
 	setComment(key, value string)
+	setFlags(flags string)
 	setIndex(index, beginTime string)
 }
 
@@ -67,6 +68,10 @@ func (s *Sheet) setFile(filename, fileType string) {
 
 func (s *Sheet) setComment(key, value string) {
 	s.current.setComment(key, value)
+}
+
+func (s *Sheet) setFlags(flags string) {
+	s.current.setFlags(flags)
 }
 
 func (s *Sheet) setIndex(index, beginTime string) {
@@ -167,6 +172,10 @@ func (h *Header) setComment(key, value string) {
 	h.Comments = append(h.Comments, Comment{Key: key, Value: value})
 }
 
+func (h *Header) setFlags(flags string) {
+	panic("Header not implemented method setFlags")
+}
+
 func (h *Header) setIndex(index, beginTime string) {
 	panic("Header not implemented method setIndex")
 }
@@ -194,6 +203,7 @@ type Track struct {
 	Catalog    string
 	ISRC       string
 	Comments   []Comment
+	Flags      string
 	Indexes    []Index
 }
 
@@ -248,6 +258,11 @@ func (t *Track) writeTo(w Writer) error {
 			}
 		}
 	}
+	if len(t.Flags) > 0 {
+		if err := NewString("    FLAGS ", t.Flags, "\n").writeTo(w); err != nil {
+			return err
+		}
+	}
 	for _, index := range t.Indexes {
 		if err := NewString("    INDEX ", index.Index, " ", index.BeginTime, "\n").writeTo(w); err != nil {
 			return err
@@ -286,6 +301,10 @@ func (t *Track) setFile(filename, fileType string) {
 
 func (t *Track) setComment(key, value string) {
 	t.Comments = append(t.Comments, Comment{Key: key, Value: value})
+}
+
+func (t *Track) setFlags(flags string) {
+	t.Flags = flags
 }
 
 func (t *Track) setIndex(index, beginTime string) {

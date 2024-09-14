@@ -56,6 +56,8 @@ func Decode(filename string) (*Sheet, error) {
 		case "ISRC":
 			var isrc = strings.TrimRight(strings.TrimLeft(value, "\""), "\"")
 			sheet.setISRC(isrc)
+		case "FLAGS":
+			sheet.setFlags(value)
 		case "INDEX":
 			var values = strings.Split(value, " ")
 			sheet.setIndex(values[0], values[1])
