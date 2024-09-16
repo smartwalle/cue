@@ -10,6 +10,8 @@ type property interface {
 	setFile(filename, fileType string)
 	setComment(key, value string)
 	setFlags(flags string)
+	setPreGap(gap string)
+	setPostGap(gap string)
 	setIndex(index, beginTime string)
 }
 
@@ -72,6 +74,14 @@ func (s *Sheet) setComment(key, value string) {
 
 func (s *Sheet) setFlags(flags string) {
 	s.current.setFlags(flags)
+}
+
+func (s *Sheet) setPreGap(gap string) {
+	s.current.setPreGap(gap)
+}
+
+func (s *Sheet) setPostGap(gap string) {
+	s.current.setPostGap(gap)
 }
 
 func (s *Sheet) setIndex(index, beginTime string) {
@@ -176,6 +186,14 @@ func (h *Header) setFlags(flags string) {
 	panic("Header not implemented method setFlags")
 }
 
+func (h *Header) setPreGap(gap string) {
+	panic("Header not implemented method setPreGap")
+}
+
+func (h *Header) setPostGap(gap string) {
+	panic("Header not implemented method setPostGap")
+}
+
 func (h *Header) setIndex(index, beginTime string) {
 	panic("Header not implemented method setIndex")
 }
@@ -204,6 +222,8 @@ type Track struct {
 	ISRC       string
 	Comments   []Comment
 	Flags      string
+	PreGap     string
+	PostGap    string
 	Indexes    []Index
 }
 
@@ -263,6 +283,16 @@ func (t *Track) writeTo(w Writer) error {
 			return err
 		}
 	}
+	if len(t.PreGap) > 0 {
+		if err := NewString("    PREGAP ", t.PreGap, "\n").writeTo(w); err != nil {
+			return err
+		}
+	}
+	if len(t.PostGap) > 0 {
+		if err := NewString("    POSTGAP ", t.PostGap, "\n").writeTo(w); err != nil {
+			return err
+		}
+	}
 	for _, index := range t.Indexes {
 		if err := NewString("    INDEX ", index.Index, " ", index.BeginTime, "\n").writeTo(w); err != nil {
 			return err
@@ -305,6 +335,14 @@ func (t *Track) setComment(key, value string) {
 
 func (t *Track) setFlags(flags string) {
 	t.Flags = flags
+}
+
+func (t *Track) setPreGap(gap string) {
+	t.PreGap = gap
+}
+
+func (t *Track) setPostGap(gap string) {
+	t.PostGap = gap
 }
 
 func (t *Track) setIndex(index, beginTime string) {

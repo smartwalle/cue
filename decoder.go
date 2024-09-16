@@ -58,6 +58,10 @@ func Decode(filename string) (*Sheet, error) {
 			sheet.setISRC(isrc)
 		case "FLAGS":
 			sheet.setFlags(value)
+		case "PREGAP":
+			sheet.setPreGap(value)
+		case "POSTGAP":
+			sheet.setPostGap(value)
 		case "INDEX":
 			var values = strings.Split(value, " ")
 			sheet.setIndex(values[0], values[1])
